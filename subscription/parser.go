@@ -1129,6 +1129,9 @@ func (p *Parser) convertOutbound(raw json.RawMessage, index int, originalData ma
 
 	key := fmt.Sprintf("%s:%d", pc.Server, pc.Port)
 	if orig, ok := originalData[key]; ok {
+		if pc.Name == "" && orig.Name != "" {
+			pc.Name = orig.Name
+		}
 		if pc.Encryption == "" || pc.Encryption == "none" {
 			if orig.Encryption != "" {
 				pc.Encryption = orig.Encryption
@@ -1137,6 +1140,10 @@ func (p *Parser) convertOutbound(raw json.RawMessage, index int, originalData ma
 		if orig.AllowInsecure {
 			pc.AllowInsecure = true
 		}
+	}
+
+	if pc.Name == "" {
+		pc.Name = fmt.Sprintf("%s:%d", pc.Server, pc.Port)
 	}
 
 	if err := pc.Validate(); err != nil {
