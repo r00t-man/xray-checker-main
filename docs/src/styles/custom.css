@@ -1,0 +1,31 @@
+html[data-theme="light"] .beoe-dark {
+  display: none;
+}
+
+html[data-theme="dark"] .beoe-light {
+  display: none;
+}
+
+/* Скрываем темную версию в светлой теме */
+html[data-theme="light"] [class*="mermaid-"] .beoe-dark {
+  display: none !important;
+}
+
+/* Скрываем светлую версию в темной теме */
+html[data-theme="dark"] [class*="mermaid-"] .beoe-light {
+  display: none !important;
+}
+
+.blanc-vpn-menu-item::before {
+  content: "";
+  display: inline-block;
+  width: 1.2em;
+  height: 1.2em;
+  margin-right: 0.2em;
+  background-image: url("/src/assets/blancvpn.png");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  vertical-align: -0.2em;
+  position: relative;
+}

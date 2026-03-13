@@ -1,0 +1,325 @@
+openapi: 3.0.3
+info:
+  title: Xray Checker API
+  description: API for monitoring Xray proxy status and configuration
+  version: "1.0"
+servers:
+  - url: /
+security:
+  - basicAuth: []
+
+paths:
+  /api/v1/public/proxies:
+    get:
+      summary: List all proxies (public)
+      description: Returns a list of all proxies with status. No authentication required. Does not expose sensitive data like server IPs and ports.
+      tags:
+        - Public
+      security: []
+      responses:
+        '200':
+          description: List of proxies with public info only
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/APIResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/PublicProxyInfo'
+
+  /api/v1/proxies:
+    get:
+      summary: List all proxies
+      description: Returns a list of all proxies with status information
+      tags:
+        - Proxies
+      responses:
+        '200':
+          description: List of proxies
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/APIResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ProxyInfo'
+
+  /api/v1/proxies/{stableID}:
+    get:
+      summary: Get proxy by ID
+      description: Returns information for a specific proxy
+      tags:
+        - Proxies
+      parameters:
+        - name: stableID
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Proxy Stable ID (16-character hash)
+      responses:
+        '200':
+          description: Proxy details
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/APIResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ProxyInfo'
+        '404':
+          description: Proxy not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIErrorResponse'
+
+  /api/v1/status:
+    get:
+      summary: Get system status
+      description: Returns summary statistics about all proxies
+      tags:
+        - Status
+      responses:
+        '200':
+          description: System status
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/APIResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/StatusResponse'
+
+  /api/v1/config:
+    get:
+      summary: Get current configuration
+      description: Returns the current checker configuration
+      tags:
+        - Config
+      responses:
+        '200':
+          description: Current configuration
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/APIResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ConfigResponse'
+
+  /api/v1/system/info:
+    get:
+      summary: Get system info
+      description: Returns version, uptime, and instance information
+      tags:
+        - System
+      responses:
+        '200':
+          description: System information
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/APIResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/SystemInfoResponse'
+
+  /api/v1/system/ip:
+    get:
+      summary: Get current IP
+      description: Returns the current detected IP address
+      tags:
+        - System
+      responses:
+        '200':
+          description: Current IP address
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/APIResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/SystemIPResponse'
+        '500':
+          description: Failed to get IP
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIErrorResponse'
+
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+
+  schemas:
+    APIResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          description: Response data (varies by endpoint)
+        error:
+          type: string
+          description: Error message (only present on failure)
+
+    APIErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: "Proxy not found"
+
+    PublicProxyInfo:
+      type: object
+      description: Public proxy info without sensitive data (server IPs, ports)
+      properties:
+        stableId:
+          type: string
+          example: "a1b2c3d4e5f67890"
+        name:
+          type: string
+          example: "US-Server-1"
+        online:
+          type: boolean
+          example: true
+        latencyMs:
+          type: integer
+          format: int64
+          example: 150
+
+    ProxyInfo:
+      type: object
+      properties:
+        index:
+          type: integer
+          example: 0
+        stableId:
+          type: string
+          example: "a1b2c3d4e5f67890"
+        name:
+          type: string
+          example: "US-Server-1"
+        subName:
+          type: string
+          description: Subscription name this proxy belongs to
+          example: "Premium VPN"
+        server:
+          type: string
+          example: "192.168.1.1"
+        port:
+          type: integer
+          example: 443
+        protocol:
+          type: string
+          enum: [vless, vmess, trojan, shadowsocks]
+          example: "vless"
+        proxyPort:
+          type: integer
+          example: 10000
+        online:
+          type: boolean
+          example: true
+        latencyMs:
+          type: integer
+          format: int64
+          example: 150
+
+    StatusResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+          example: 10
+        online:
+          type: integer
+          example: 8
+        offline:
+          type: integer
+          example: 2
+        avgLatencyMs:
+          type: integer
+          format: int64
+          example: 200
+
+    ConfigResponse:
+      type: object
+      properties:
+        checkInterval:
+          type: integer
+          example: 300
+        checkMethod:
+          type: string
+          enum: [ip, status, download]
+          example: "ip"
+        timeout:
+          type: integer
+          example: 30
+        startPort:
+          type: integer
+          example: 10000
+        subscriptionUpdate:
+          type: boolean
+          example: true
+        subscriptionUpdateInterval:
+          type: integer
+          example: 300
+        simulateLatency:
+          type: boolean
+          example: true
+        subscriptionNames:
+          type: array
+          description: List of unique subscription names
+          items:
+            type: string
+          example: ["Premium VPN", "Basic VPN"]
+
+    SystemInfoResponse:
+      type: object
+      properties:
+        version:
+          type: string
+          example: "1.0.0"
+        uptime:
+          type: string
+          example: "1h 30m 45s"
+        uptimeSec:
+          type: integer
+          format: int64
+          example: 5445
+        instance:
+          type: string
+          example: "prod-1"
+
+    SystemIPResponse:
+      type: object
+      properties:
+        ip:
+          type: string
+          example: "203.0.113.1"
+

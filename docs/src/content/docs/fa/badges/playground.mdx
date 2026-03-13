@@ -1,0 +1,124 @@
+---
+title: سازنده نشان
+description: سازنده تعاملی نشان برای جاسازی وضعیت پروکسی
+---
+
+import BadgePlayground from '../../../../components/BadgePlayground.astro';
+
+## سیستم نشان
+
+Xray Checker شامل یک سیستم نشان است که به شما امکان می‌دهد نشانگرهای وضعیت پروکسی را در هر جایی جاسازی کنید. نشان‌ها برای موارد زیر عالی هستند:
+
+- صفحات وضعیت
+- داشبوردها
+- مستندات
+- فایل‌های README
+- نمایشگرهای مانیتورینگ
+
+## سازنده تعاملی
+
+از این سازنده برای پیکربندی و پیش‌نمایش نشان خود استفاده کنید. URL Xray Checker و Stable ID پروکسی را برای شروع وارد کنید.
+
+:::tip[هنوز نمونه خود را ندارید؟]
+نشان‌ها را در دموی عمومی ما امتحان کنید: [demo-xray-checker.kutovoy.dev](https://demo-xray-checker.kutovoy.dev/). از پروکسی‌های دمو برای آزمایش سبک‌های مختلف نشان استفاده کنید.
+:::
+
+<BadgePlayground />
+
+## مرجع پارامترهای URL
+
+| پارامتر | مقادیر | پیش‌فرض | توضیحات |
+|---------|--------|---------|---------|
+| `stableId` | `{id}` | اجباری | شناسه پایدار پروکسی از API |
+| `theme` | `dark`, `light` | `dark` | تم رنگی |
+| `variant` | `default`, `flat`, `pill`, `dot` | `default` | سبک نشان |
+| `size` | `sm`, `md`, `lg` | `md` | اندازه نشان |
+| `rounded` | `none`, `sm`, `md`, `lg`, `full` | `md` | گردی گوشه‌ها |
+| `showName` | `true`, `false` | `true` | نمایش نام پروکسی |
+| `showLatency` | `true`, `false` | `true` | نمایش مقدار تأخیر |
+| `transparent` | `true`, `false` | `false` | پس‌زمینه شفاف |
+| `width` | عدد | auto | عرض سفارشی |
+| `height` | عدد | auto | ارتفاع سفارشی |
+
+## دریافت Stable ID
+
+هر پروکسی یک `stableId` منحصر به فرد دارد که بین راه‌اندازی‌های مجدد حفظ می‌شود. آن را از API دریافت کنید:
+
+```bash
+curl https://your-xray-checker.com/api/v1/public/proxies
+```
+
+پاسخ شامل `stableId` برای هر پروکسی است:
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "stableId": "a1b2c3d4e5f67890",
+      "name": "US-Server-1",
+      "online": true,
+      "latencyMs": 150
+    }
+  ]
+}
+```
+
+## مثال‌ها
+
+### نشان پایه
+
+```
+https://your-server.com/?stableId=abc123
+```
+
+### تم روشن قرص‌شکل
+
+```
+https://your-server.com/?stableId=abc123&theme=light&variant=pill
+```
+
+### فقط نقطه وضعیت
+
+```
+https://your-server.com/?stableId=abc123&variant=dot
+```
+
+### فشرده بدون تأخیر
+
+```
+https://your-server.com/?stableId=abc123&size=sm&showLatency=false
+```
+
+### اندازه سفارشی برای داشبورد
+
+```
+https://your-server.com/?stableId=abc123&width=200&height=40
+```
+
+### پس‌زمینه شفاف
+
+```
+https://your-server.com/?stableId=abc123&transparent=true
+```
+
+## جاسازی
+
+### HTML iframe
+
+```html
+<iframe
+  src="https://your-server.com/?stableId=abc123&theme=light&variant=pill"
+  width="200"
+  height="50"
+  frameborder="0">
+</iframe>
+```
+
+### Markdown (GitHub)
+
+توجه: GitHub از iframe پشتیبانی نمی‌کند. به جای آن از سرویس تصویر وضعیت یا لینک استفاده کنید:
+
+```markdown
+[![Server Status](https://img.shields.io/badge/dynamic/json?url=https://your-server.com/api/v1/public/proxies&query=$.data[0].online&label=US-Server&color=brightgreen)](https://your-server.com)
+```

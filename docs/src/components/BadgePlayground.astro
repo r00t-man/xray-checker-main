@@ -1,0 +1,463 @@
+---
+---
+
+<div class="badge-playground">
+  <div class="playground-controls">
+    <div class="control-group">
+      <label for="base-url">Base URL</label>
+      <input type="text" id="base-url" placeholder="https://your-xray-checker.com" />
+    </div>
+
+    <div class="control-group">
+      <label for="stable-id">Stable ID</label>
+      <input type="text" id="stable-id" placeholder="abc123def456" />
+    </div>
+
+    <div class="control-row">
+      <div class="control-group">
+        <label for="theme">Theme</label>
+        <select id="theme">
+          <option value="dark">Dark</option>
+          <option value="light">Light</option>
+          <option value="transparent">Transparent</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label for="variant">Variant</label>
+        <select id="variant">
+          <option value="default">Default</option>
+          <option value="flat">Flat</option>
+          <option value="pill">Pill</option>
+          <option value="dot">Dot only</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label for="size">Size</label>
+        <select id="size">
+          <option value="sm">Small</option>
+          <option value="md" selected>Medium</option>
+          <option value="lg">Large</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="control-row">
+      <div class="control-group">
+        <label for="rounded">Rounded</label>
+        <select id="rounded">
+          <option value="none">None</option>
+          <option value="sm">Small</option>
+          <option value="md" selected>Medium</option>
+          <option value="lg">Large</option>
+          <option value="full">Full</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label for="width">Width (px)</label>
+        <input type="number" id="width" placeholder="auto" />
+      </div>
+
+      <div class="control-group">
+        <label for="height">Height (px)</label>
+        <input type="number" id="height" placeholder="auto" />
+      </div>
+    </div>
+
+    <div class="control-row checkboxes">
+      <label class="checkbox-label">
+        <input type="checkbox" id="show-name" checked />
+        <span>Show Name</span>
+      </label>
+      <label class="checkbox-label">
+        <input type="checkbox" id="show-latency" checked />
+        <span>Show Latency</span>
+      </label>
+    </div>
+  </div>
+
+  <div class="preview-section">
+    <h4>Preview</h4>
+    <div class="preview-container" id="preview-container">
+      <div class="preview-dark" id="preview-dark">
+        <span class="preview-label">Dark</span>
+        <iframe id="iframe-dark" title="Badge preview dark"></iframe>
+      </div>
+      <div class="preview-light" id="preview-light">
+        <span class="preview-label">Light</span>
+        <iframe id="iframe-light" title="Badge preview light"></iframe>
+      </div>
+    </div>
+    <p class="preview-note" id="preview-note">Enter Base URL and Stable ID to see preview</p>
+  </div>
+
+  <div class="output-section">
+    <h4>Generated URL</h4>
+    <div class="url-output">
+      <code id="generated-url">-</code>
+      <button id="copy-url" title="Copy URL">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        </svg>
+      </button>
+    </div>
+
+    <h4>Embed Code</h4>
+    <div class="url-output">
+      <code id="embed-code">-</code>
+      <button id="copy-embed" title="Copy embed code">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .badge-playground {
+    background: var(--sl-color-gray-6);
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+  }
+
+  .playground-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .control-group label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--sl-color-gray-2);
+    height: 1.25rem;
+    display: flex;
+    align-items: center;
+  }
+
+  .control-group input,
+  .control-group select {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 6px;
+    background: var(--sl-color-gray-7);
+    color: var(--sl-color-white);
+    font-size: 0.9rem;
+    height: 38px;
+    box-sizing: border-box;
+  }
+
+  .control-group input:focus,
+  .control-group select:focus {
+    outline: none;
+    border-color: var(--sl-color-accent);
+  }
+
+  .control-row {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-end;
+  }
+
+  .control-row .control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .control-row.checkboxes {
+    display: flex;
+    flex-direction: row;
+    gap: 1.5rem;
+    align-items: baseline;
+  }
+
+  .checkbox-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+  }
+
+  .checkbox-label input[type="checkbox"] {
+    width: 1rem;
+    height: 1rem;
+    cursor: pointer;
+    margin: 0;
+    flex-shrink: 0;
+    vertical-align: middle;
+  }
+
+  .checkbox-label span {
+    vertical-align: middle;
+  }
+
+  .preview-section h4,
+  .output-section h4 {
+    margin: 0 0 0.75rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--sl-color-gray-2);
+  }
+
+  .preview-container {
+    display: none;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .preview-container.visible {
+    display: flex;
+    align-items: stretch;
+  }
+
+  .preview-dark,
+  .preview-light {
+    flex: 1;
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 0 !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    height: 120px;
+    overflow: hidden;
+  }
+
+  .preview-dark {
+    background: #0f1114;
+  }
+
+  .preview-light {
+    background: #f5f8fa;
+  }
+
+  .preview-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.6;
+  }
+
+  .preview-dark .preview-label {
+    color: #9ca3af;
+  }
+
+  .preview-light .preview-label {
+    color: #4b5563;
+  }
+
+  .preview-dark iframe,
+  .preview-light iframe {
+    border: none;
+    width: 100%;
+    height: 50px;
+    background: transparent;
+  }
+
+  .preview-note {
+    color: var(--sl-color-gray-3);
+    font-size: 0.85rem;
+    font-style: italic;
+    margin: 0;
+  }
+
+  .preview-note.hidden {
+    display: none;
+  }
+
+  .output-section {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--sl-color-gray-5);
+  }
+
+  .url-output {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--sl-color-gray-7);
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 6px;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .url-output code {
+    flex: 1;
+    font-size: 0.8rem;
+    word-break: break-all;
+    color: var(--sl-color-accent);
+    background: none;
+    padding: 0;
+  }
+
+  .url-output button {
+    flex-shrink: 0;
+    padding: 0.5rem;
+    background: var(--sl-color-gray-6);
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 4px;
+    color: var(--sl-color-gray-2);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .url-output button:hover {
+    background: var(--sl-color-gray-5);
+    color: var(--sl-color-white);
+  }
+
+  .url-output button.copied {
+    background: #22c55e;
+    border-color: #22c55e;
+    color: white;
+  }
+
+  @media (max-width: 640px) {
+    .control-row {
+      flex-direction: column;
+    }
+
+    .control-row.checkboxes {
+      flex-direction: row;
+      flex-wrap: wrap;
+    }
+
+    .preview-container {
+      flex-direction: column;
+    }
+
+    .preview-dark,
+    .preview-light {
+      height: 100px;
+    }
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const baseUrl = document.getElementById('base-url') as HTMLInputElement;
+    const stableId = document.getElementById('stable-id') as HTMLInputElement;
+    const theme = document.getElementById('theme') as HTMLSelectElement;
+    const variant = document.getElementById('variant') as HTMLSelectElement;
+    const size = document.getElementById('size') as HTMLSelectElement;
+    const rounded = document.getElementById('rounded') as HTMLSelectElement;
+    const width = document.getElementById('width') as HTMLInputElement;
+    const height = document.getElementById('height') as HTMLInputElement;
+    const showName = document.getElementById('show-name') as HTMLInputElement;
+    const showLatency = document.getElementById('show-latency') as HTMLInputElement;
+
+    const previewContainer = document.getElementById('preview-container')!;
+    const previewNote = document.getElementById('preview-note')!;
+    const iframeDark = document.getElementById('iframe-dark') as HTMLIFrameElement;
+    const iframeLight = document.getElementById('iframe-light') as HTMLIFrameElement;
+    const generatedUrl = document.getElementById('generated-url')!;
+    const embedCode = document.getElementById('embed-code')!;
+    const copyUrlBtn = document.getElementById('copy-url')!;
+    const copyEmbedBtn = document.getElementById('copy-embed')!;
+
+    function generateUrl(forTheme?: string, forceTransparent?: boolean): string {
+      const base = baseUrl.value.trim().replace(/\/$/, '');
+      const id = stableId.value.trim();
+
+      if (!base || !id) return '';
+
+      const params = new URLSearchParams();
+      params.set('stableId', id);
+
+      const isTransparent = forceTransparent || theme.value === 'transparent';
+      const themeValue = forTheme || (isTransparent ? 'dark' : theme.value);
+
+      if (themeValue !== 'dark') {
+        params.set('theme', themeValue);
+      }
+      if (isTransparent) {
+        params.set('transparent', 'true');
+      }
+
+      if (variant.value !== 'default') params.set('variant', variant.value);
+      if (size.value !== 'md') params.set('size', size.value);
+      if (rounded.value !== 'md') params.set('rounded', rounded.value);
+      if (width.value) params.set('width', width.value);
+      if (height.value) params.set('height', height.value);
+      if (!showName.checked) params.set('showName', 'false');
+      if (!showLatency.checked) params.set('showLatency', 'false');
+
+      return `${base}/?${params.toString()}`;
+    }
+
+    function updatePreview() {
+      const base = baseUrl.value.trim();
+      const id = stableId.value.trim();
+
+      if (!base || !id) {
+        previewContainer.classList.remove('visible');
+        previewNote.classList.remove('hidden');
+        generatedUrl.textContent = '-';
+        embedCode.textContent = '-';
+        return;
+      }
+
+      previewContainer.classList.add('visible');
+      previewNote.classList.add('hidden');
+
+      const isTransparent = theme.value === 'transparent';
+      const urlDark = generateUrl('dark', isTransparent);
+      const urlLight = generateUrl('light', isTransparent);
+      const mainUrl = generateUrl();
+
+      iframeDark.src = urlDark;
+      iframeLight.src = urlLight;
+
+      generatedUrl.textContent = mainUrl;
+
+      const iframeHeight = height.value || '50';
+      const iframeWidth = width.value || '250';
+      embedCode.textContent = `<iframe src="${mainUrl}" width="${iframeWidth}" height="${iframeHeight}" frameborder="0"></iframe>`;
+    }
+
+    function copyToClipboard(text: string, button: HTMLElement) {
+      navigator.clipboard.writeText(text).then(() => {
+        button.classList.add('copied');
+        setTimeout(() => button.classList.remove('copied'), 1500);
+      });
+    }
+
+    // Event listeners
+    const inputs = [baseUrl, stableId, theme, variant, size, rounded, width, height, showName, showLatency];
+    inputs.forEach(input => {
+      input.addEventListener('input', updatePreview);
+      input.addEventListener('change', updatePreview);
+    });
+
+    copyUrlBtn.addEventListener('click', () => {
+      const url = generatedUrl.textContent;
+      if (url && url !== '-') copyToClipboard(url, copyUrlBtn);
+    });
+
+    copyEmbedBtn.addEventListener('click', () => {
+      const code = embedCode.textContent;
+      if (code && code !== '-') copyToClipboard(code, copyEmbedBtn);
+    });
+  });
+</script>

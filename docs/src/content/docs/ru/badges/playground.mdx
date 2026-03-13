@@ -1,0 +1,124 @@
+---
+title: Конструктор бейджей
+description: Интерактивный конструктор бейджей для встраивания статуса прокси
+---
+
+import BadgePlayground from '../../../../components/BadgePlayground.astro';
+
+## Система бейджей
+
+Xray Checker включает систему бейджей, которая позволяет встраивать индикаторы статуса прокси куда угодно. Бейджи идеально подходят для:
+
+- Страниц статуса
+- Дашбордов
+- Документации
+- README файлов
+- Мониторинговых экранов
+
+## Интерактивный конструктор
+
+Используйте этот конструктор для настройки и предпросмотра бейджа. Введите URL вашего Xray Checker и Stable ID прокси для начала.
+
+:::tip[Ещё нет своего инстанса?]
+Попробуйте бейджи на нашем публичном демо: [demo-xray-checker.kutovoy.dev](https://demo-xray-checker.kutovoy.dev/). Используйте прокси из демо для экспериментов с разными стилями бейджей.
+:::
+
+<BadgePlayground />
+
+## Справочник по параметрам URL
+
+| Параметр | Значения | По умолчанию | Описание |
+|----------|----------|--------------|----------|
+| `stableId` | `{id}` | обязательно | Stable ID прокси из API |
+| `theme` | `dark`, `light` | `dark` | Цветовая тема |
+| `variant` | `default`, `flat`, `pill`, `dot` | `default` | Стиль бейджа |
+| `size` | `sm`, `md`, `lg` | `md` | Размер бейджа |
+| `rounded` | `none`, `sm`, `md`, `lg`, `full` | `md` | Скругление углов |
+| `showName` | `true`, `false` | `true` | Показывать имя прокси |
+| `showLatency` | `true`, `false` | `true` | Показывать задержку |
+| `transparent` | `true`, `false` | `false` | Прозрачный фон |
+| `width` | число | auto | Пользовательская ширина |
+| `height` | число | auto | Пользовательская высота |
+
+## Получение Stable ID
+
+Каждый прокси имеет уникальный `stableId`, который сохраняется между перезапусками. Получите его через API:
+
+```bash
+curl https://your-xray-checker.com/api/v1/public/proxies
+```
+
+Ответ содержит `stableId` для каждого прокси:
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "stableId": "a1b2c3d4e5f67890",
+      "name": "US-Server-1",
+      "online": true,
+      "latencyMs": 150
+    }
+  ]
+}
+```
+
+## Примеры
+
+### Базовый бейдж
+
+```
+https://your-server.com/?stableId=abc123
+```
+
+### Светлая тема, таблетка
+
+```
+https://your-server.com/?stableId=abc123&theme=light&variant=pill
+```
+
+### Только точка статуса
+
+```
+https://your-server.com/?stableId=abc123&variant=dot
+```
+
+### Компактный без задержки
+
+```
+https://your-server.com/?stableId=abc123&size=sm&showLatency=false
+```
+
+### Пользовательский размер для дашборда
+
+```
+https://your-server.com/?stableId=abc123&width=200&height=40
+```
+
+### Прозрачный фон
+
+```
+https://your-server.com/?stableId=abc123&transparent=true
+```
+
+## Встраивание
+
+### HTML iframe
+
+```html
+<iframe
+  src="https://your-server.com/?stableId=abc123&theme=light&variant=pill"
+  width="200"
+  height="50"
+  frameborder="0">
+</iframe>
+```
+
+### Markdown (GitHub)
+
+Примечание: GitHub не поддерживает iframe. Используйте сервис изображений статуса или ссылку:
+
+```markdown
+[![Server Status](https://img.shields.io/badge/dynamic/json?url=https://your-server.com/api/v1/public/proxies&query=$.data[0].online&label=US-Server&color=brightgreen)](https://your-server.com)
+```

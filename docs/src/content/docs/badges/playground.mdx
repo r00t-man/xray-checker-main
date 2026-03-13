@@ -1,0 +1,147 @@
+---
+title: Badge Playground
+description: Interactive badge builder for embedding proxy status
+---
+
+import BadgePlayground from '../../../components/BadgePlayground.astro';
+
+## Badge System
+
+Xray Checker includes a badge system that allows you to embed proxy status indicators anywhere. Badges are perfect for:
+
+- Status pages
+- Dashboards
+- Documentation
+- README files
+- Monitoring displays
+
+## Interactive Builder
+
+Use this playground to configure and preview your badge. Enter your Xray Checker URL and a proxy's Stable ID to get started.
+
+:::tip[No instance yet?]
+Try badges on our public demo: [demo-xray-checker.kutovoy.dev](https://demo-xray-checker.kutovoy.dev/). Use proxies from the demo to experiment with different badge styles.
+:::
+
+<BadgePlayground />
+
+## URL Parameters Reference
+
+| Parameter | Values | Default | Description |
+|-----------|--------|---------|-------------|
+| `stableId` | `{id}` | required | Proxy stable ID from API |
+| `theme` | `dark`, `light` | `dark` | Color theme |
+| `variant` | `default`, `flat`, `pill`, `dot` | `default` | Badge style |
+| `size` | `sm`, `md`, `lg` | `md` | Badge size |
+| `rounded` | `none`, `sm`, `md`, `lg`, `full` | `md` | Corner rounding |
+| `showName` | `true`, `false` | `true` | Show proxy name |
+| `showLatency` | `true`, `false` | `true` | Show latency value |
+| `transparent` | `true`, `false` | `false` | Transparent background |
+| `width` | number or CSS value | auto | Custom width |
+| `height` | number or CSS value | auto | Custom height |
+
+## Getting Stable ID
+
+Each proxy has a unique `stableId` that persists across restarts. Get it from the API:
+
+```bash
+curl https://your-xray-checker.com/api/v1/public/proxies
+```
+
+Response includes `stableId` for each proxy:
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "stableId": "a1b2c3d4e5f67890",
+      "name": "US-Server-1",
+      "online": true,
+      "latencyMs": 150
+    }
+  ]
+}
+```
+
+## Examples
+
+### Basic Badge
+
+```
+https://your-server.com/?stableId=abc123
+```
+
+### Light Theme Pill
+
+```
+https://your-server.com/?stableId=abc123&theme=light&variant=pill
+```
+
+### Status Dot Only
+
+```
+https://your-server.com/?stableId=abc123&variant=dot
+```
+
+### Compact Without Latency
+
+```
+https://your-server.com/?stableId=abc123&size=sm&showLatency=false
+```
+
+### Custom Size for Dashboard
+
+```
+https://your-server.com/?stableId=abc123&width=200&height=40
+```
+
+### Transparent Background
+
+```
+https://your-server.com/?stableId=abc123&transparent=true
+```
+
+## Embedding
+
+### HTML iframe
+
+```html
+<iframe
+  src="https://your-server.com/?stableId=abc123&theme=light&variant=pill"
+  width="200"
+  height="50"
+  frameborder="0">
+</iframe>
+```
+
+### Markdown (GitHub)
+
+Note: GitHub doesn't support iframes. Use a status image service or link instead:
+
+```markdown
+[![Server Status](https://img.shields.io/badge/dynamic/json?url=https://your-server.com/api/v1/public/proxies&query=$.data[0].online&label=US-Server&color=brightgreen)](https://your-server.com)
+```
+
+## Page Customization
+
+You can also customize the full dashboard page using URL parameters:
+
+| Parameter | Description |
+|-----------|-------------|
+| `hideHeader=true` | Hide header with logo and controls |
+| `hideStats=true` | Hide statistics cards |
+| `hideServersHeader=true` | Hide "Servers" heading and buttons |
+| `hideControls=true` | Hide search, filters, and sorting |
+| `hideProxies=true` | Hide proxy list |
+| `hideStatusInfo=true` | Hide technical info footer |
+| `hideFooter=true` | Hide page footer |
+| `hideBackground=true` | Transparent background |
+
+### Example: Minimal Embed
+
+```
+https://your-server.com/?hideHeader=true&hideFooter=true&hideBackground=true&hideControls=true
+```
+
+This shows only the proxy cards on a transparent background - perfect for embedding.
