@@ -20,6 +20,7 @@ var (
 
 type EndpointInfo struct {
 	Name       string
+	PaidUntil  string
 	ServerInfo string
 	URL        string
 	ProxyPort  int
@@ -54,11 +55,12 @@ func IndexHandler(version string, proxyChecker *checker.ProxyChecker) http.Handl
 			endpoints = make([]EndpointInfo, len(allEndpoints))
 			for i, ep := range allEndpoints {
 				endpoints[i] = EndpointInfo{
-					Name:     ep.Name,
-					Index:    ep.Index,
-					Status:   ep.Status,
-					Latency:  ep.Latency,
-					StableID: ep.StableID,
+					Name:      ep.Name,
+					PaidUntil: ep.PaidUntil,
+					Index:     ep.Index,
+					Status:    ep.Status,
+					Latency:   ep.Latency,
+					StableID:  ep.StableID,
 				}
 			}
 		}
@@ -83,6 +85,7 @@ func IndexHandler(version string, proxyChecker *checker.ProxyChecker) http.Handl
 			ShowServerDetails:          showServerDetails,
 			IsPublic:                   isPublic,
 			SubscriptionName:           subscription.GetSubscriptionName(),
+			ShowPaidUntil:              config.CLIConfig.Web.PaidUntilDefault != "" || len(config.WebPaidUntil) > 0,
 		}
 
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -163,6 +166,7 @@ func RegisterConfigEndpoints(proxies []*models.ProxyConfig, proxyChecker *checke
 
 		endpoints = append(endpoints, EndpointInfo{
 			Name:       proxy.Name,
+			PaidUntil:  config.GetProxyPaidUntil(proxy.Name),
 			ServerInfo: fmt.Sprintf("%s:%d", proxy.Server, proxy.Port),
 			URL:        endpoint,
 			ProxyPort:  startPort + proxy.Index,
