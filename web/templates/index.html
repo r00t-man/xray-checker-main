@@ -890,6 +890,13 @@
                 ></span
               ></span>
               {{ end }}
+              {{ if .ShowPaidUntil }}
+              <span
+                x-show="proxy.paidUntil"
+                class="text-[11px] text-muted truncate block mt-0.5"
+                x-text="'Оплачено до: ' + proxy.paidUntil"
+              ></span>
+              {{ end }}
             </div>
 
             <!-- Latency -->
@@ -1067,7 +1074,7 @@
 
           proxies: [
             {{ range $.Endpoints }}
-            { name: "{{.Name}}", stableId: "{{.StableID}}", {{ if $.ShowServerDetails }}serverInfo: "{{.ServerInfo}}", proxyPort: {{.ProxyPort}}, {{ end }}{{ if not $.IsPublic }}url: "{{.URL}}", {{ end }}index: {{.Index}}, status: {{.Status}}, latency: "{{ formatLatency .Latency }}", latencyMs: {{ .Latency.Milliseconds }} },
+            { name: "{{.Name}}", stableId: "{{.StableID}}", paidUntil: "{{.PaidUntil}}", {{ if $.ShowServerDetails }}serverInfo: "{{.ServerInfo}}", proxyPort: {{.ProxyPort}}, {{ end }}{{ if not $.IsPublic }}url: "{{.URL}}", {{ end }}index: {{.Index}}, status: {{.Status}}, latency: "{{ formatLatency .Latency }}", latencyMs: {{ .Latency.Milliseconds }} },
             {{ end }}
           ],
 

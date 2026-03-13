@@ -161,6 +161,34 @@ Makes the dashboard publicly accessible without authentication. When enabled, th
 This option requires `METRICS_PROTECTED=true`. The `/metrics` endpoint and API will still require authentication, but the main dashboard (`/`) and individual proxy status pages (`/config/{id}`) will be public.
 :::
 
+### WEB_PAID_UNTIL
+
+- CLI: `--web-paid-until`
+- Required: No
+- Default: None
+
+JSON object with per-server payment expiration date that is shown in the server card as `Оплачено до: DD-MM-YYYY`.
+
+Example:
+```env
+WEB_PAID_UNTIL={"🇱🇻 Латвия YT":"31-12-2026","🇪🇪 Эстония - 2":"15-01-2027"}
+```
+
+Names are matched after whitespace normalization, so accidental zero-width spaces or double spaces in server names are ignored.
+
+### WEB_PAID_UNTIL_DEFAULT
+
+- CLI: `--web-paid-until-default`
+- Required: No
+- Default: None
+
+Fallback date used for every server that does not have an explicit value in `WEB_PAID_UNTIL`.
+
+Example:
+```env
+WEB_PAID_UNTIL_DEFAULT=31-12-2026
+```
+
 ### WEB_CUSTOM_ASSETS_PATH
 
 - CLI: `--web-custom-assets-path`
