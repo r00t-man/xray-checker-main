@@ -15,6 +15,8 @@ import (
 	"xray-checker/config"
 	"xray-checker/logger"
 	"xray-checker/models"
+
+	"github.com/xtls/libxray/share"
 )
 
 type Parser struct{}
@@ -224,9 +226,19 @@ func (p *Parser) Parse(subscriptionData string) (*ParseResult, error) {
 
 	cleanedData := p.cleanEmptyLines(rawData)
 
-	outbounds := p.parseShareLinksOutbounds(cleanedData)
-	if len(outbounds) == 0 {
-		return nil, fmt.Errorf("failed to parse subscription links: no supported share links found")
+	xrayConfig, err := share.ConvertShareLinksToXrayJson(string(cleanedData))
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse subscription links: %v", err)
+	}
+
+	outbounds := make([]json.RawMessage, 0, len(xrayConfig.OutboundConfigs))
+	for _, outbound := range xrayConfig.OutboundConfigs {
+		outboundRaw, err := json.Marshal(outbound)
+		if err != nil {
+			logger.Debug("Skipping outbound due to marshal error: %v", err)
+			continue
+		}
+		outbounds = append(outbounds, outboundRaw)
 	}
 
 	logger.Debug("Parsed %d outbounds", len(outbounds))
