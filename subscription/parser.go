@@ -16,7 +16,7 @@ import (
 	"xray-checker/logger"
 	"xray-checker/models"
 
-	libXray "github.com/xtls/libxray"
+	"github.com/xtls/libxray/share"
 )
 
 type Parser struct{}
@@ -28,11 +28,6 @@ type fetchResult struct {
 
 func NewParser() *Parser {
 	return &Parser{}
-}
-
-type libXrayResponse struct {
-	Success bool            `json:"success"`
-	Data    json.RawMessage `json:"data"`
 }
 
 type libXrayOutbound struct {
@@ -231,36 +226,26 @@ func (p *Parser) Parse(subscriptionData string) (*ParseResult, error) {
 
 	cleanedData := p.cleanEmptyLines(rawData)
 
-	base64Data := base64.StdEncoding.EncodeToString(cleanedData)
-
-	resultBase64 := libXray.ConvertShareLinksToXrayJson(base64Data)
-
-	resultBytes, err := base64.StdEncoding.DecodeString(resultBase64)
+	xrayConfig, err := share.ConvertShareLinksToXrayJson(string(cleanedData))
 	if err != nil {
-		return nil, fmt.Errorf("failed to decode libXray response: %v", err)
+		return nil, fmt.Errorf("failed to parse subscription links: %v", err)
 	}
 
-	var response libXrayResponse
-	if err := json.Unmarshal(resultBytes, &response); err != nil {
-		return nil, fmt.Errorf("failed to parse libXray response: %v", err)
+	outbounds := make([]json.RawMessage, 0, len(xrayConfig.OutboundConfigs))
+	for _, outbound := range xrayConfig.OutboundConfigs {
+		outboundRaw, err := json.Marshal(outbound)
+		if err != nil {
+			logger.Debug("Skipping outbound due to marshal error: %v", err)
+			continue
+		}
+		outbounds = append(outbounds, outboundRaw)
 	}
 
-	if !response.Success {
-		return nil, fmt.Errorf("libXray parsing failed. Please check your subscription hosts, check your HWID in your dashboard, or try disabling HWID lock for your checker account")
-	}
-
-	var xrayConfig struct {
-		Outbounds []json.RawMessage `json:"outbounds"`
-	}
-	if err := json.Unmarshal(response.Data, &xrayConfig); err != nil {
-		return nil, fmt.Errorf("failed to parse libXray config data: %v", err)
-	}
-
-	logger.Debug("Parsed %d outbounds", len(xrayConfig.Outbounds))
+	logger.Debug("Parsed %d outbounds", len(outbounds))
 
 	var proxyConfigs []*models.ProxyConfig
 	configIndex := 0
-	for _, outboundRaw := range xrayConfig.Outbounds {
+	for _, outboundRaw := range outbounds {
 		proxyConfig, err := p.convertOutbound(outboundRaw, configIndex, originalData)
 		if err != nil {
 			logger.Debug("Skipping outbound: %v", err)
