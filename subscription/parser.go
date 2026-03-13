@@ -264,6 +264,387 @@ func (p *Parser) Parse(subscriptionData string) (*ParseResult, error) {
 	return &ParseResult{Configs: proxyConfigs, Name: subName}, nil
 }
 
+func (p *Parser) parseShareLinksOutbounds(rawData []byte) []json.RawMessage {
+	decoded := p.tryDecodeBase64(rawData)
+	lines := strings.Split(string(decoded), "\n")
+	outbounds := make([]json.RawMessage, 0, len(lines))
+
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+
+		outbound := p.parseShareLinkToOutbound(line)
+		if outbound == nil {
+			continue
+		}
+
+		raw, err := json.Marshal(outbound)
+		if err != nil {
+			logger.Debug("Skipping outbound due to marshal error: %v", err)
+			continue
+		}
+		outbounds = append(outbounds, raw)
+	}
+
+	return outbounds
+}
+
+func (p *Parser) parseShareLinkToOutbound(link string) map[string]interface{} {
+	if strings.HasPrefix(link, "vmess://") {
+		return p.parseVMessOutbound(link)
+	}
+
+	if strings.HasPrefix(link, "vless://") {
+		return p.parseVLESSOutbound(link)
+	}
+
+	if strings.HasPrefix(link, "trojan://") {
+		return p.parseTrojanOutbound(link)
+	}
+
+	if strings.HasPrefix(link, "ss://") {
+		return p.parseShadowsocksOutbound(link)
+	}
+
+	return nil
+}
+
+func (p *Parser) parseVLESSOutbound(link string) map[string]interface{} {
+	u, err := url.Parse(link)
+	if err != nil || u.Hostname() == "" || u.Port() == "" || u.User == nil {
+		return nil
+	}
+	port, err := strconv.Atoi(u.Port())
+	if err != nil || port == 0 {
+		return nil
+	}
+	id := u.User.Username()
+	if id == "" {
+		return nil
+	}
+
+	q := u.Query()
+	encryption := q.Get("encryption")
+	if encryption == "" {
+		encryption = "none"
+	}
+
+	outbound := map[string]interface{}{
+		"protocol": "vless",
+		"settings": map[string]interface{}{
+			"vnext": []map[string]interface{}{{
+				"address": u.Hostname(),
+				"port":    port,
+				"users": []map[string]interface{}{{
+					"id":         id,
+					"encryption": encryption,
+					"flow":       q.Get("flow"),
+				}},
+			}},
+		},
+	}
+	p.attachStreamSettings(outbound, q)
+	return outbound
+}
+
+func (p *Parser) parseTrojanOutbound(link string) map[string]interface{} {
+	u, err := url.Parse(link)
+	if err != nil || u.Hostname() == "" || u.Port() == "" || u.User == nil {
+		return nil
+	}
+	port, err := strconv.Atoi(u.Port())
+	if err != nil || port == 0 {
+		return nil
+	}
+	password := u.User.Username()
+	if password == "" {
+		return nil
+	}
+
+	q := u.Query()
+	outbound := map[string]interface{}{
+		"protocol": "trojan",
+		"settings": map[string]interface{}{
+			"servers": []map[string]interface{}{{
+				"address":  u.Hostname(),
+				"port":     port,
+				"password": password,
+				"flow":     q.Get("flow"),
+			}},
+		},
+	}
+	p.attachStreamSettings(outbound, q)
+	return outbound
+}
+
+func (p *Parser) parseShadowsocksOutbound(link string) map[string]interface{} {
+	method, password, server, port, err := p.parseShadowsocksCreds(link)
+	if err != nil {
+		return nil
+	}
+
+	outbound := map[string]interface{}{
+		"protocol": "shadowsocks",
+		"settings": map[string]interface{}{
+			"servers": []map[string]interface{}{{
+				"address":  server,
+				"port":     port,
+				"method":   method,
+				"password": password,
+			}},
+		},
+	}
+	return outbound
+}
+
+func (p *Parser) parseShadowsocksCreds(link string) (string, string, string, int, error) {
+	u, err := url.Parse(link)
+	if err == nil && u.Hostname() != "" && u.Port() != "" {
+		port, pErr := strconv.Atoi(u.Port())
+		if pErr == nil && u.User != nil {
+			method := u.User.Username()
+			password, _ := u.User.Password()
+			if method != "" && password != "" {
+				return method, password, u.Hostname(), port, nil
+			}
+		}
+	}
+
+	raw := strings.TrimPrefix(link, "ss://")
+	if i := strings.Index(raw, "#"); i >= 0 {
+		raw = raw[:i]
+	}
+	if i := strings.Index(raw, "?"); i >= 0 {
+		raw = raw[:i]
+	}
+
+	parts := strings.SplitN(raw, "@", 2)
+	if len(parts) != 2 {
+		return "", "", "", 0, fmt.Errorf("invalid ss link")
+	}
+
+	left := parts[0]
+	right := parts[1]
+	if decoded, err := p.decodeBase64(left); err == nil {
+		left = string(decoded)
+	}
+
+	cred := strings.SplitN(left, ":", 2)
+	if len(cred) != 2 {
+		return "", "", "", 0, fmt.Errorf("invalid ss credentials")
+	}
+
+	host, portStr, ok := strings.Cut(right, ":")
+	if !ok {
+		return "", "", "", 0, fmt.Errorf("invalid ss host")
+	}
+	port, err := strconv.Atoi(portStr)
+	if err != nil || port == 0 {
+		return "", "", "", 0, fmt.Errorf("invalid ss port")
+	}
+
+	return cred[0], cred[1], host, port, nil
+}
+
+func (p *Parser) parseVMessOutbound(link string) map[string]interface{} {
+	encoded := strings.TrimPrefix(link, "vmess://")
+	decoded, err := p.decodeBase64(encoded)
+	if err != nil {
+		return nil
+	}
+
+	var vmess map[string]interface{}
+	if err := json.Unmarshal(decoded, &vmess); err != nil {
+		return nil
+	}
+
+	server, _ := vmess["add"].(string)
+	if server == "" {
+		return nil
+	}
+
+	port := 0
+	switch v := vmess["port"].(type) {
+	case float64:
+		port = int(v)
+	case string:
+		port, _ = strconv.Atoi(v)
+	}
+	if port == 0 {
+		return nil
+	}
+
+	id, _ := vmess["id"].(string)
+	if id == "" {
+		return nil
+	}
+
+	aid := 0
+	switch v := vmess["aid"].(type) {
+	case float64:
+		aid = int(v)
+	case string:
+		aid, _ = strconv.Atoi(v)
+	}
+
+	security := "auto"
+	if v, ok := vmess["scy"].(string); ok && v != "" {
+		security = v
+	}
+
+	outbound := map[string]interface{}{
+		"protocol": "vmess",
+		"settings": map[string]interface{}{
+			"vnext": []map[string]interface{}{{
+				"address": server,
+				"port":    port,
+				"users": []map[string]interface{}{{
+					"id":       id,
+					"alterId":  aid,
+					"security": security,
+				}},
+			}},
+		},
+	}
+
+	q := url.Values{}
+	if v, ok := vmess["net"].(string); ok {
+		q.Set("type", v)
+	}
+	if v, ok := vmess["host"].(string); ok {
+		q.Set("host", v)
+	}
+	if v, ok := vmess["path"].(string); ok {
+		q.Set("path", v)
+	}
+	if v, ok := vmess["tls"].(string); ok && v != "" && v != "none" {
+		q.Set("security", "tls")
+	}
+	if v, ok := vmess["sni"].(string); ok {
+		q.Set("sni", v)
+	}
+
+	p.attachStreamSettings(outbound, q)
+	return outbound
+}
+
+func (p *Parser) attachStreamSettings(outbound map[string]interface{}, q url.Values) {
+	network := q.Get("type")
+	if network == "" {
+		network = "tcp"
+	}
+	security := q.Get("security")
+	if security == "" {
+		security = "none"
+	}
+
+	stream := map[string]interface{}{
+		"network":  network,
+		"security": security,
+	}
+
+	host := q.Get("host")
+	path := q.Get("path")
+
+	if security == "tls" {
+		tlsSettings := map[string]interface{}{}
+		if sni := q.Get("sni"); sni != "" {
+			tlsSettings["serverName"] = sni
+		}
+		if allow := q.Get("allowInsecure"); allow == "1" || strings.EqualFold(allow, "true") {
+			tlsSettings["allowInsecure"] = true
+		}
+		stream["tlsSettings"] = tlsSettings
+	}
+
+	if security == "reality" {
+		reality := map[string]interface{}{}
+		if sni := q.Get("sni"); sni != "" {
+			reality["serverName"] = sni
+		}
+		if fp := q.Get("fp"); fp != "" {
+			reality["fingerprint"] = fp
+		}
+		if pbk := q.Get("pbk"); pbk != "" {
+			reality["publicKey"] = pbk
+		}
+		if sid := q.Get("sid"); sid != "" {
+			reality["shortId"] = sid
+		}
+		if spx := q.Get("spx"); spx != "" {
+			reality["spiderX"] = spx
+		}
+		stream["realitySettings"] = reality
+	}
+
+	switch network {
+	case "ws":
+		ws := map[string]interface{}{}
+		if path != "" {
+			ws["path"] = path
+		}
+		if host != "" {
+			ws["headers"] = map[string]interface{}{"Host": host}
+		}
+		stream["wsSettings"] = ws
+	case "grpc":
+		grpc := map[string]interface{}{}
+		if serviceName := q.Get("serviceName"); serviceName != "" {
+			grpc["serviceName"] = serviceName
+		}
+		if strings.EqualFold(q.Get("mode"), "multi") {
+			grpc["multiMode"] = true
+		}
+		stream["grpcSettings"] = grpc
+	case "h2", "http":
+		httpSettings := map[string]interface{}{}
+		if path != "" {
+			httpSettings["path"] = path
+		}
+		if host != "" {
+			httpSettings["host"] = strings.Split(host, ",")
+		}
+		stream["httpSettings"] = httpSettings
+	case "httpupgrade":
+		httpUp := map[string]interface{}{}
+		if path != "" {
+			httpUp["path"] = path
+		}
+		if host != "" {
+			httpUp["host"] = host
+		}
+		stream["httpupgradeSettings"] = httpUp
+	case "xhttp", "splithttp":
+		xhttp := map[string]interface{}{}
+		if path != "" {
+			xhttp["path"] = path
+		}
+		if host != "" {
+			xhttp["host"] = host
+		}
+		if mode := q.Get("mode"); mode != "" {
+			xhttp["mode"] = mode
+		}
+		stream["xhttpSettings"] = xhttp
+	case "tcp":
+		if strings.EqualFold(q.Get("headerType"), "http") {
+			stream["tcpSettings"] = map[string]interface{}{
+				"header": map[string]interface{}{
+					"type": "http",
+					"request": map[string]interface{}{
+						"path":    []string{path},
+						"headers": map[string]interface{}{"Host": []string{host}},
+					},
+				},
+			}
+		}
+	}
+
+	outbound["streamSettings"] = stream
+}
+
 func (p *Parser) parseJSONConfigs(data []byte) ([]*models.ProxyConfig, error) {
 	var configs []struct {
 		Remarks   string            `json:"remarks"`
