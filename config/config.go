@@ -1,13 +1,18 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
+	"strings"
+	"unicode"
 
 	"github.com/alecthomas/kong"
 )
 
 var CLIConfig CLI
 var Version string
+var WebPaidUntil map[string]string
+var WebPaidUntilDefault string
 
 func Parse(version string) {
 	Version = version
@@ -61,6 +66,8 @@ type CLI struct {
 		ShowServerDetails bool   `name:"web-show-details" help:"Show server IP addresses and ports in web UI" default:"false" env:"WEB_SHOW_DETAILS"`
 		Public            bool   `name:"web-public" help:"Make dashboard public (requires --metrics-protected)" default:"false" env:"WEB_PUBLIC"`
 		CustomAssetsPath  string `name:"web-custom-assets-path" help:"Path to custom assets directory (logo.svg, favicon.ico, custom.css, index.html)" default:"" env:"WEB_CUSTOM_ASSETS_PATH"`
+		PaidUntil         string `name:"web-paid-until" help:"JSON map of proxy name to paid-until date (DD-MM-YYYY)" default:"" env:"WEB_PAID_UNTIL"`
+		PaidUntilDefault  string `name:"web-paid-until-default" help:"Default paid-until date (DD-MM-YYYY) for proxies without explicit value" default:"" env:"WEB_PAID_UNTIL_DEFAULT"`
 	} `embed:"" prefix:""`
 
 	Version  VersionFlag `name:"version" help:"Print version information and quit"`
@@ -72,7 +79,61 @@ func (c *CLI) Validate() error {
 	if c.Web.Public && !c.Metrics.Protected {
 		return fmt.Errorf("--web-public requires --metrics-protected to be enabled")
 	}
+
+	paidUntil, err := parsePaidUntilMap(c.Web.PaidUntil)
+	if err != nil {
+		return err
+	}
+
+	WebPaidUntil = paidUntil
+	WebPaidUntilDefault = strings.TrimSpace(c.Web.PaidUntilDefault)
 	return nil
+}
+
+func parsePaidUntilMap(raw string) (map[string]string, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return map[string]string{}, nil
+	}
+
+	parsed := map[string]string{}
+	if err := json.Unmarshal([]byte(raw), &parsed); err != nil {
+		return nil, fmt.Errorf("invalid WEB_PAID_UNTIL JSON: %w", err)
+	}
+
+	result := make(map[string]string, len(parsed))
+	for name, date := range parsed {
+		normalizedName := NormalizeProxyName(name)
+		normalizedDate := strings.TrimSpace(date)
+		if normalizedName == "" || normalizedDate == "" {
+			continue
+		}
+		result[normalizedName] = normalizedDate
+	}
+
+	return result, nil
+}
+
+func NormalizeProxyName(name string) string {
+	cleaned := strings.Map(func(r rune) rune {
+		switch r {
+		case '\u200b', '\u200c', '\u200d', '\ufeff':
+			return -1
+		}
+		if unicode.IsSpace(r) {
+			return ' '
+		}
+		return r
+	}, name)
+
+	return strings.Join(strings.Fields(cleaned), " ")
+}
+
+func GetProxyPaidUntil(name string) string {
+	if paidUntil, ok := WebPaidUntil[NormalizeProxyName(name)]; ok {
+		return paidUntil
+	}
+	return WebPaidUntilDefault
 }
 
 type VersionFlag string

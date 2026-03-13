@@ -856,7 +856,7 @@
         x-show="showProxies"
         class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2 mb-4"
       >
-        <template x-for="(proxy, idx) in filteredProxies" :key="proxy.name">
+        <template x-for="(proxy, idx) in filteredProxies" :key="proxy.stableId">
           <div
             class="proxy-card group card rounded-lg px-3 py-2.5 flex items-center gap-3 transition-all duration-150"
             :class="initialLoad && 'animate'"
@@ -888,6 +888,13 @@
                 ><span x-text="proxy.serverInfo"></span> · :<span
                   x-text="proxy.proxyPort"
                 ></span
+              ></span>
+              {{ end }}
+              {{ if .ShowPaidUntil }}
+              <span
+                x-show="proxy.paidUntil"
+                class="text-[11px] text-muted truncate block mt-0.5"
+                x-text="'Оплачено до: ' + proxy.paidUntil"
               ></span>
               {{ end }}
             </div>
@@ -1067,7 +1074,7 @@
 
           proxies: [
             {{ range $.Endpoints }}
-            { name: "{{.Name}}", stableId: "{{.StableID}}", {{ if $.ShowServerDetails }}serverInfo: "{{.ServerInfo}}", proxyPort: {{.ProxyPort}}, {{ end }}{{ if not $.IsPublic }}url: "{{.URL}}", {{ end }}index: {{.Index}}, status: {{.Status}}, latency: "{{ formatLatency .Latency }}", latencyMs: {{ .Latency.Milliseconds }} },
+            { name: "{{.Name}}", stableId: "{{.StableID}}", paidUntil: "{{.PaidUntil}}", {{ if $.ShowServerDetails }}serverInfo: "{{.ServerInfo}}", proxyPort: {{.ProxyPort}}, {{ end }}{{ if not $.IsPublic }}url: "{{.URL}}", {{ end }}index: {{.Index}}, status: {{.Status}}, latency: "{{ formatLatency .Latency }}", latencyMs: {{ .Latency.Milliseconds }} },
             {{ end }}
           ],
 

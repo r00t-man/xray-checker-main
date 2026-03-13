@@ -50,6 +50,7 @@ type PageData struct {
 	PushUrl                    string
 	Endpoints                  []EndpointInfo
 	ShowServerDetails          bool
+	ShowPaidUntil              bool
 	IsPublic                   bool
 	SubscriptionName           string
 }
